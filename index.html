@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title></title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--引入vue-->
+    <script src="./lib/vue.js"></script>
+    <!--引入axios-->
+    <script src="./lib/axios.min.js"></script>
+    <!--引入moment-->
+    <script src="./lib/moment.js"></script>
+    <style>
+        #app {
+            width: 600px;
+            margin: 10px auto;
+        }
+
+        .tb {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .tb th {
+            background-color: #0094ff;
+            color: white;
+        }
+
+        .tb td,
+        .tb th {
+            padding: 5px;
+            border: 1px solid black;
+            text-align: center;
+        }
+
+        .add {
+            padding: 5px;
+            border: 1px solid black;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <!--视图容器-->
+    <div id="app">
+        <div class="add">
+            品牌名称:
+            <input type="text" v-model="addname" v-focus>
+            <input type="button" value="添加" @click="add">
+        </div>
+        <div class="add">
+            品牌名称:
+            <input type="text" placeholder="请输入搜索条件" v-model="searchValue">
+        </div>
+        <div>
+            <table class="tb">
+                <tr>
+                    <th>编号</th>
+                    <th>品牌名称</th>
+                    <th>创立时间</th>
+                    <th>操作</th>
+                </tr>
+                <!--<tr v-for="item in list">-->
+                <tr v-for="item in search">
+                    <td>{{ item.id }}</td>
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.created | timeHandler }}</td>
+                    <td>
+                        <a href="#" @click.prevent="del(item.id)">删除</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4" v-show="search.length === 0">没有品牌数据</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+
+    <script>
+
+        let vm = new Vue({
+            el: '#app',
+            data: {
+                //封装请求路径
+                requestUrl: 'http://localhost:3000/brand',
+                //数据
+                list: [],
+                //添加品牌名称的数据
+                addname: '',
+                //搜索的数据
+                searchValue: ''
+            },
+            methods: {
+                //1.封装一个请求所有数据的方法
+                //注意:需要在created生命周期钩子调用（data和methods已经可以访问和使用）
+                getAllData() {
+                    axios.get(this.requestUrl).then(result => {
+                        if (result.status === 200) {
+                            let {data} = result;
+                            this.list = data;
+                        } else {
+                            alert('出错啦');
+                        }
+                    })
+                },
+                //2.为添加按钮绑定点击事件
+                add() {
+                    axios.post(this.requestUrl, {name: this.addname, created: Date.now()}).then(result => {
+                        if (result.status === 201) {
+                            alert('添加成功');
+                            //并重新请求所有数据
+                            this.getAllData();
+
+                            //清除文本框内容
+                            this.addname = '';
+                        } else {
+                            alert('添加失败');
+                        }
+                    })
+                },
+                //3.为删除按钮绑定点击事件
+                del(id) {
+                    if (confirm('您确定要删除此条数据吗')) {
+                        axios.delete(`${this.requestUrl}/${id}`).then(result => {
+                            if (result.status === 200) {
+                                alert('删除成功');
+
+                                //重新请求数据
+                                this.getAllData();
+                            } else {
+                                alert('删除失败');
+                            }
+                        })
+                    }
+                },
+
+            },
+            //生命周期钩子 在这个期间调用methods中的getAllData方法
+            created() {
+                this.getAllData();
+            },
+            //创建一个局部过滤器
+            filters: {
+                //用来初始化时间数据的格式
+                timeHandler: function (value) {
+                    return moment(value).format('YYYY-MM-DD HH:mm:ss');
+                }
+            },
+            //创建一个局部自定义属性
+            directives: {
+                //页面一刷新 添加文本框 自动获得焦点
+                focus: {
+                    //已经插入到DOM树的阶段
+                    inserted: function (el) {
+                        el.focus();
+                    }
+                }
+            },
+            //计算属性
+            computed: {
+                //完成搜索功能
+                search: function () {
+                    let arr = [];
+                    axios.get(`${this.requestUrl}?name_like=${this.searchValue}`).then(result => {
+                        //返回搜索的内容
+                        //return result.data; //1.这一步返回给的是axios的get方法 而不是search方法
+                        arr = result.data;
+                    });
+                    return arr;//2.注意该行为是异步操作
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>
