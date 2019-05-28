@@ -62,8 +62,7 @@
                     <th>创立时间</th>
                     <th>操作</th>
                 </tr>
-                <!--<tr v-for="item in list">-->
-                <tr v-for="item in search">
+                <tr v-for="item in list">
                     <td>{{ item.id }}</td>
                     <td>{{ item.name }}</td>
                     <td>{{ item.created | timeHandler }}</td>
@@ -72,7 +71,7 @@
                     </td>
                 </tr>
                 <tr>
-                    <td colspan="4" v-show="search.length === 0">没有品牌数据</td>
+                    <td colspan="4" v-show="list.length === 0">没有品牌数据</td>
                 </tr>
             </table>
         </div>
@@ -159,19 +158,30 @@
                     }
                 }
             },
-            //计算属性
-            computed: {
-                //完成搜索功能
-                search: function () {
-                    let arr = [];
-                    axios.get(`${this.requestUrl}?name_like=${this.searchValue}`).then(result => {
-                        //返回搜索的内容
-                        //return result.data; //1.这一步返回给的是axios的get方法 而不是search方法
-                        arr = result.data;
-                    });
-                    return arr;//2.注意该行为是异步操作
+            //侦听器
+            watch: {
+                // 完成搜索功能
+                searchValue: function () {
+                    axios.get(`${this.requestUrl}?name_like=${this.searchValue}`)
+                        .then(result => {
+                            this.list = result.data;
+                        });
                 }
-            }
+            },
+            //计算属性
+            // computed: {
+            //     //完成搜索功能
+            //     search: function () {
+            //         let arr = [];
+            //         axios.get(`${this.requestUrl}?name_like=${this.searchValue}`)
+            //             .then(result => {
+            //                 //返回搜索的内容
+            //                 //return result.data; //1.这一步返回给的是axios的get方法 而不是search方法
+            //                 arr = result.data;
+            //             });
+            //         return arr;//2.注意该行为是异步操作,在服务器还未响应回数据时,此句代码已经执行完毕了
+            //     }
+            // }
         })
     </script>
 </body>
